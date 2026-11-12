@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pharma Research Assistant</title>
+<style>
+  :root {
+    --bg:#f6f7f9; --card:#fff; --text:#1c2330; --muted:#667085; --border:#e2e6ee;
+    --accent:#1f5eff; --accent-soft:#e8efff;
+    --ok:#127a4b; --ok-soft:#e3f5ec; --warn:#8a5a00; --warn-soft:#fff3d4; --bad:#b42318; --bad-soft:#fde8e6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#0f131a; --card:#171c26; --text:#e6eaf2; --muted:#98a3b5; --border:#29313f;
+      --accent:#6e96ff; --accent-soft:#1c2a4d;
+      --ok:#4cc38a; --ok-soft:#13301f; --warn:#e6b84d; --warn-soft:#38300f; --bad:#ff8a80; --bad-soft:#3a1916;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 28px 18px 60px; }
+  header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+  h1 { margin:0; font-size: 1.6rem; }
+  .sub { color:var(--muted); margin:4px 0 0; font-size:.95rem; }
+  .pill { font-size:.8rem; padding:3px 10px; border-radius:99px; background:var(--warn-soft); color:var(--warn); white-space:nowrap; }
+  .pill.ready { background:var(--ok-soft); color:var(--ok); }
+  .pill.failed { background:var(--bad-soft); color:var(--bad); }
+  .banner { margin:18px 0; padding:10px 14px; border-radius:10px; background:var(--warn-soft); color:var(--warn); font-size:.9rem; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:18px; margin-top:16px; }
+  textarea { width:100%; min-height:96px; resize:vertical; padding:12px; border-radius:10px; border:1px solid var(--border);
+             background:var(--bg); color:var(--text); font:inherit; }
+  textarea:focus { outline:2px solid var(--accent); border-color:transparent; }
+  .row { display:flex; gap:10px; align-items:center; justify-content:space-between; margin-top:10px; flex-wrap:wrap; }
+  .hint { color:var(--muted); font-size:.85rem; }
+  button.primary { background:var(--accent); color:#fff; border:0; border-radius:10px; padding:10px 22px; font:inherit; font-weight:600; cursor:pointer; }
+  button.primary:disabled { opacity:.55; cursor:progress; }
+  .examples { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .chip { border:1px solid var(--border); background:var(--card); color:var(--text); border-radius:99px; padding:5px 12px; font:inherit; font-size:.85rem; cursor:pointer; }
+  .chip:hover { border-color:var(--accent); color:var(--accent); }
+  .status { display:flex; align-items:center; gap:10px; color:var(--muted); }
+  .spinner { width:18px; height:18px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error { background:var(--bad-soft); color:var(--bad); border-color:transparent; }
+  .answer h3, .answer h4, .answer h5, .answer h6 { margin:1.1em 0 .4em; }
+  .answer p { margin:.6em 0; }
+  .answer ul, .answer ol { margin:.4em 0; padding-left:1.4em; }
+  .answer hr { border:0; border-top:1px solid var(--border); margin:1.2em 0; }
+  .answer code { background:var(--bg); padding:1px 5px; border-radius:5px; font-size:.9em; }
+  .cite { display:inline-block; background:var(--accent-soft); color:var(--accent); border-radius:6px; padding:0 6px; font-size:.78rem; margin:0 1px; }
+  .table-wrap { overflow-x:auto; }
+  table { border-collapse:collapse; width:100%; font-size:.92rem; }
+  th, td { border:1px solid var(--border); padding:6px 10px; text-align:left; vertical-align:top; }
+  th { background:var(--bg); }
+  .meta { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:14px; }
+  .src { background:var(--ok-soft); color:var(--ok); border-radius:8px; padding:2px 10px; font-size:.82rem; }
+  .badge { border-radius:8px; padding:2px 10px; font-size:.78rem; }
+  .badge.revised { background:var(--accent-soft); color:var(--accent); }
+  .badge.supported { background:var(--ok-soft); color:var(--ok); }
+  .badge.ambiguous { background:var(--warn-soft); color:var(--warn); }
+  .badge.unsupported { background:var(--bad-soft); color:var(--bad); }
+  details { margin-top:14px; border-top:1px solid var(--border); padding-top:10px; }
+  summary { cursor:pointer; font-weight:600; }
+  details h4 { margin:14px 0 6px; font-size:.95rem; }
+  details ul { margin:4px 0; padding-left:1.3em; }
+  .tool { font-family: ui-monospace, Consolas, monospace; font-size:.82rem; word-break:break-word; }
+  .claim { margin:6px 0; font-size:.9rem; }
+  .muted { color:var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Pharma Research Assistant</h1>
+      <p class="sub">Agentic Q&amp;A over FDA drug labels and consumer monographs: plan, retrieve, use tools, review, answer.</p>
+    </div>
+    <span id="health" class="pill">Checking…</span>
+  </header>
+
+  <div class="banner"><strong>Not medical advice.</strong> This is a technical demo. Answers come only from a small local corpus of drug documents.</div>
+
+  <section class="card">
+    <textarea id="q" maxlength="2000" placeholder="Ask a question, e.g. compare two drugs, check an interaction or a renal threshold…"></textarea>
+    <div class="row">
+      <span class="hint">Ctrl + Enter to send</span>
+      <button id="ask" class="primary">Ask</button>
+    </div>
+    <div class="examples" id="examples"></div>
+  </section>
+
+  <div id="output" aria-live="polite"></div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+const EXAMPLES = [
+  "What are the main contraindications for warfarin?",
+  "Compare the contraindications of warfarin and apixaban. What conditions are shared and which are unique to each drug?",
+  "A patient currently on warfarin is prescribed sertraline. What is the risk of bleeding and what monitoring is recommended?",
+  "A patient with an eGFR of 25 mL/min is being considered for metformin. Is metformin contraindicated at this level of renal function, and what is the threshold?"
+];
+
+/* ---------- tiny, safe Markdown renderer (escapes HTML first) ---------- */
+function esc(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function inline(s) {
+  s = esc(s);
+  s = s.replace(/\[([^\[\]]+?\.md[^\[\]]*)\]/g, '<span class="cite">$1</span>');
+  s = s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  s = s.replace(/(^|[\s(])_(.+?)_(?=[\s).,;:]|$)/g, "$1<em>$2</em>");
+  s = s.replace(/(^|[\s(])\*(?!\s)(.+?)\*(?=[\s).,;:]|$)/g, "$1<em>$2</em>");
+  s = s.replace(/`([^`]+)`/g, "<code>$1</code>");
+  return s;
+}
+function renderTable(rows) {
+  const cells = (r) => r.replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+  const body = rows.filter((r) => !/^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?$/.test(r));
+  if (!body.length) return "";
+  const [head, ...rest] = body;
+  return "<div class='table-wrap'><table><thead><tr>" +
+    cells(head).map((c) => `<th>${inline(c)}</th>`).join("") + "</tr></thead><tbody>" +
+    rest.map((r) => "<tr>" + cells(r).map((c) => `<td>${inline(c)}</td>`).join("") + "</tr>").join("") +
+    "</tbody></table></div>";
+}
+function renderMarkdown(md) {
+  const lines = md.replace(/\r/g, "").split("\n");
+  let html = "", para = [];
+  const lists = [];
+  const flushPara = () => { if (para.length) { html += "<p>" + inline(para.join(" ")) + "</p>"; para = []; } };
+  const closeLists = (toIndent = -1) => {
+    while (lists.length && lists[lists.length - 1].indent > toIndent) html += "</li></" + lists.pop().tag + ">";
+  };
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i], trimmed = line.trim();
+    if (!trimmed) { flushPara(); continue; }
+    if (/^-{3,}$/.test(trimmed)) { flushPara(); closeLists(); html += "<hr>"; continue; }
+    const heading = trimmed.match(/^(#{1,4})\s+(.*)$/);
+    if (heading) {
+      flushPara(); closeLists();
+      const n = heading[1].length + 2;
+      html += `<h${n}>${inline(heading[2])}</h${n}>`;
+      continue;
+    }
+    if (trimmed.startsWith("|")) {
+      flushPara(); closeLists();
+      const rows = [];
+      while (i < lines.length && lines[i].trim().startsWith("|")) rows.push(lines[i++].trim());
+      i--;
+      html += renderTable(rows);
+      continue;
+    }
+    const item = line.match(/^(\s*)([-*•]|\d+[.)])\s+(.*)$/);
+    if (item) {
+      flushPara();
+      const indent = item[1].length, tag = /\d/.test(item[2]) ? "ol" : "ul";
+      closeLists(indent);
+      const top = lists[lists.length - 1];
+      if (top && top.indent === indent) html += "</li><li>";
+      else { html += `<${tag}><li>`; lists.push({ indent, tag }); }
+      html += inline(item[3]);
+      continue;
+    }
+    if (lists.length && /^\s+/.test(line)) { html += " " + inline(trimmed); continue; }
+    closeLists();
+    para.push(trimmed);
+  }
+  flushPara(); closeLists();
+  return html;
+}
+
+/* ---------- DOM helpers ---------- */
+function el(tag, cls, text) {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+function formatDetail(detail) {
+  if (!detail) return "";
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) return detail.map((d) => d.msg || JSON.stringify(d)).join("; ");
+  return JSON.stringify(detail);
+}
+
+/* ---------- views ---------- */
+let timer = null;
+function setBusy(busy) {
+  $("ask").disabled = busy;
+  $("q").disabled = busy;
+  clearInterval(timer);
+  if (!busy) return;
+  const card = el("section", "card status");
+  card.append(el("div", "spinner"));
+  const label = el("span", "", "Working… 0 s (planning, retrieving, reviewing; usually 15-40 s)");
+  card.append(label);
+  $("output").replaceChildren(card);
+  const started = Date.now();
+  timer = setInterval(() => {
+    label.textContent = `Working… ${Math.round((Date.now() - started) / 1000)} s (planning, retrieving, reviewing; usually 15-40 s)`;
+  }, 1000);
+}
+function showError(message) {
+  const card = el("section", "card error");
+  card.append(el("strong", "", "Something went wrong. "), document.createTextNode(message));
+  $("output").replaceChildren(card);
+}
+function showResult(data) {
+  const card = el("section", "card");
+
+  const answer = el("div", "answer");
+  answer.innerHTML = renderMarkdown(data.answer);   // renderer escapes all HTML first
+  card.append(answer);
+
+  const meta = el("div", "meta");
+  meta.append(el("span", "muted", "Sources:"));
+  data.sources.forEach((s) => meta.append(el("span", "src", s)));
+  if (data.revised) meta.append(el("span", "badge revised", "revised after review"));
+  meta.append(el("span", "muted", `${(data.elapsed_ms / 1000).toFixed(1)} s`));
+  card.append(meta);
+
+  const details = el("details");
+  details.append(el("summary", "", "How the agent got here"));
+
+  details.append(el("h4", "", "1. Plan"));
+  const planList = el("ul");
+  data.plan.sub_questions.forEach((q) => planList.append(el("li", "", q)));
+  details.append(planList);
+
+  details.append(el("h4", "", "2. Tools chosen by the agent"));
+  const toolList = el("ul");
+  data.tool_calls.forEach((c) => {
+    const text = `${c.tool}(${JSON.stringify(c.arguments)})` + (c.error ? `  -> error: ${c.error}` : "") + `  [${c.ms} ms]`;
+    toolList.append(el("li", "tool", text));
+  });
+  if (!data.tool_calls.length) toolList.append(el("li", "muted", "No tool calls."));
+  details.append(toolList);
+
+  details.append(el("h4", "", "3. Critic review"));
+  details.append(el("p", "muted", data.review.summary || "No summary."));
+  data.review.claims.forEach((c) => {
+    const row = el("div", "claim");
+    row.append(el("span", `badge ${c.verdict}`, c.verdict), document.createTextNode(" " + c.claim));
+    if (c.note) row.append(el("div", "muted", c.note));
+    details.append(row);
+  });
+  data.review.issues.forEach((i) => details.append(el("div", "claim", "Issue: " + i)));
+
+  card.append(details);
+  $("output").replaceChildren(card);
+}
+
+/* ---------- actions ---------- */
+async function ask() {
+  const question = $("q").value.trim();
+  if (question.length < 3) { showError("Please enter a question (at least 3 characters)."); return; }
+  setBusy(true);
+  try {
+    const res = await fetch("/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(formatDetail(data.detail) || `Request failed (${res.status}).`);
+    setBusy(false);
+    showResult(data);
+  } catch (err) {
+    setBusy(false);
+    showError(err.message || "Network error.");
+  }
+}
+
+async function pollHealth() {
+  const pill = $("health");
+  try {
+    const h = await (await fetch("/health")).json();
+    if (h.agent === "ready") { pill.textContent = "Agent ready"; pill.className = "pill ready"; return; }
+    if (h.agent === "failed") { pill.textContent = "Agent failed to start"; pill.className = "pill failed"; pill.title = h.detail || ""; return; }
+    pill.textContent = "Starting up…"; pill.className = "pill";
+  } catch {
+    pill.textContent = "Server unreachable"; pill.className = "pill failed";
+  }
+  setTimeout(pollHealth, 2000);
+}
+
+EXAMPLES.forEach((text) => {
+  const chip = el("button", "chip", text.length > 62 ? text.slice(0, 60) + "…" : text);
+  chip.type = "button";
+  chip.title = text;
+  chip.onclick = () => { $("q").value = text; $("q").focus(); };
+  $("examples").append(chip);
+});
+$("ask").onclick = ask;
+$("q").addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) ask(); });
+pollHealth();
+</script>
+</body>
+</html>
